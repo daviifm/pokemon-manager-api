@@ -1,0 +1,249 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "PokéManager API",
+    "description": "API RESTful para gerenciamento de um catálogo de Pokémons, construída com Clean Architecture."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3333/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Pokemons",
+      "description": "Endpoints de gerenciamento de Pokémons"
+    }
+  ],
+  "paths": {
+    "/api/v1/pokemons/stats": {
+      "get": {
+        "tags": [
+          "Pokemons"
+        ],
+        "summary": "Estatísticas gerais do catálogo",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Estatísticas acumuladas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "totalPokemons": 4,
+                  "typesCount": {
+                    "Grass": 1,
+                    "Fire": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pokemons": {
+      "post": {
+        "tags": [
+          "Pokemons"
+        ],
+        "summary": "Cadastra um novo Pokémon",
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Pokémon criado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pokemon"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePokemonDto"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Pokemons"
+        ],
+        "summary": "Lista todos os Pokémons",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Lista de Pokémons",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Pokemon"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pokemons/{id}": {
+      "put": {
+        "tags": [
+          "Pokemons"
+        ],
+        "summary": "Atualiza um Pokémon pelo ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID do Pokémon a ser atualizado"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pokémon atualizado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pokemon"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pokémon não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePokemonDto"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Pokemons"
+        ],
+        "summary": "Remove um Pokémon pelo ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID do Pokémon a ser removido"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Pokémon removido com sucesso"
+          },
+          "404": {
+            "description": "Pokémon não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Pokemon": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1"
+          },
+          "name": {
+            "type": "string",
+            "example": "Pikachu"
+          },
+          "type": {
+            "type": "string",
+            "example": "Electric"
+          }
+        }
+      },
+      "CreatePokemonDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1"
+          },
+          "name": {
+            "type": "string",
+            "example": "Pikachu"
+          },
+          "type": {
+            "type": "string",
+            "example": "Electric"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type"
+        ]
+      },
+      "UpdatePokemonDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Raichu"
+          },
+          "type": {
+            "type": "string",
+            "example": "Electric"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Pokémon com id 1 não encontrado"
+          }
+        }
+      }
+    }
+  }
+}

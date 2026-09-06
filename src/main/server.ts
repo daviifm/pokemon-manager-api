@@ -24,11 +24,64 @@ const controller = new PokemonController(
 
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerOutput));
 
-// /stats ANTES de /:id — rota fixa sempre antes de rota dinâmica no mesmo prefixo
-app.get('/api/v1/pokemons/stats', controller.stats);
-app.post('/api/v1/pokemons', controller.create);
-app.get('/api/v1/pokemons', controller.list);
-app.put('/api/v1/pokemons/:id', controller.update);
-app.delete('/api/v1/pokemons/:id', controller.delete);
+app.get('/api/v1/pokemons/stats', /* 
+  #swagger.tags = ['Pokemons']
+  #swagger.summary = 'Estatísticas gerais do catálogo'
+  #swagger.responses[200] = {
+    description: 'Estatísticas acumuladas',
+    content: { 'application/json': { schema: { totalPokemons: 4, typesCount: { Grass: 1, Fire: 1 } } } }
+  }
+*/ controller.stats);
+
+app.post('/api/v1/pokemons', /* 
+  #swagger.tags = ['Pokemons']
+  #swagger.summary = 'Cadastra um novo Pokémon'
+  #swagger.requestBody = {
+    required: true,
+    content: { 'application/json': { schema: { $ref: '#/components/schemas/CreatePokemonDto' } } }
+  }
+  #swagger.responses[201] = {
+    description: 'Pokémon criado com sucesso',
+    content: { 'application/json': { schema: { $ref: '#/components/schemas/Pokemon' } } }
+  }
+*/ controller.create);
+
+app.get('/api/v1/pokemons', /* 
+  #swagger.tags = ['Pokemons']
+  #swagger.summary = 'Lista todos os Pokémons'
+  #swagger.responses[200] = {
+    description: 'Lista de Pokémons',
+    content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Pokemon' } } } }
+  }
+*/ controller.list);
+
+app.put('/api/v1/pokemons/:id', /* 
+  #swagger.tags = ['Pokemons']
+  #swagger.summary = 'Atualiza um Pokémon pelo ID'
+  #swagger.parameters['id'] = { description: 'ID do Pokémon a ser atualizado' }
+  #swagger.requestBody = {
+    required: true,
+    content: { 'application/json': { schema: { $ref: '#/components/schemas/UpdatePokemonDto' } } }
+  }
+  #swagger.responses[200] = {
+    description: 'Pokémon atualizado com sucesso',
+    content: { 'application/json': { schema: { $ref: '#/components/schemas/Pokemon' } } }
+  }
+  #swagger.responses[404] = {
+    description: 'Pokémon não encontrado',
+    content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+  }
+*/ controller.update);
+
+app.delete('/api/v1/pokemons/:id', /* 
+  #swagger.tags = ['Pokemons']
+  #swagger.summary = 'Remove um Pokémon pelo ID'
+  #swagger.parameters['id'] = { description: 'ID do Pokémon a ser removido' }
+  #swagger.responses[204] = { description: 'Pokémon removido com sucesso' }
+  #swagger.responses[404] = {
+    description: 'Pokémon não encontrado',
+    content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+  }
+*/ controller.delete);
 
 app.listen(3333, () => console.log('Servidor rodando em http://localhost:3333'));
