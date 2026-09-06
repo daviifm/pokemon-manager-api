@@ -1,4 +1,7 @@
 import express from 'express';
+import swaggerUi from 'swagger-ui-express';
+import swaggerOutput from './config/swagger-output.json';
+
 import { InMemoryPokemonRepository } from '@infrastructure/database/in-memory/InMemoryPokemonRepository';
 import { CreatePokemonUseCase } from '@application/use-cases/CreatePokemonUseCase';
 import { ListPokemonsUseCase } from '@application/use-cases/ListPokemonsUseCase';
@@ -19,7 +22,9 @@ const controller = new PokemonController(
   new GetPokemonStatsUseCase(repository),
 );
 
-// ⚠️ /stats tem que vir ANTES de /:id — veja explicação abaixo
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerOutput));
+
+// /stats ANTES de /:id — rota fixa sempre antes de rota dinâmica no mesmo prefixo
 app.get('/api/v1/pokemons/stats', controller.stats);
 app.post('/api/v1/pokemons', controller.create);
 app.get('/api/v1/pokemons', controller.list);
