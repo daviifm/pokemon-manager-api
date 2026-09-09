@@ -1,4 +1,4 @@
-# PokéManager API ![Seedot](https://githubusercontent.com)
+# PokéManager API ![Seedot](https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/273.png)
 
 API RESTful para gerenciamento de um catálogo de Pokémons, desenvolvida como projeto da disciplina de Tópicos Especiais em Engenharia de Software, seguindo os princípios da **Clean Architecture**.
 
