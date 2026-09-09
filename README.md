@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/273.png" width="40" style="vertical-align: middle"/> PokéManager API
+# PokéManager API <img align="right" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/273.png" width="60"/>
 
 API RESTful para gerenciamento de um catálogo de Pokémons, desenvolvida como projeto da disciplina de Tópicos Especiais em Engenharia de Software, seguindo os princípios da **Clean Architecture**.
 
