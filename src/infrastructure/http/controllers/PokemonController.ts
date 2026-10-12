@@ -29,7 +29,9 @@ export class PokemonController {
       }
     */
     const pokemon = await this.createUseCase.execute(req.body);
-    return res.status(201).json({ message: 'Pokémon cadastrado com sucesso!', data: pokemon });
+    return res
+      .status(201)
+      .json({ message: 'Pokémon cadastrado com sucesso!', data: pokemon });
   };
 
   list = async (_req: Request, res: Response): Promise<Response> => {
@@ -60,7 +62,8 @@ export class PokemonController {
       await this.deleteUseCase.execute(req.params.id);
       return res.status(204).send();
     } catch (err) {
-      if (err instanceof PokemonNotFoundError) return res.status(404).json({ message: err.message });
+      if (err instanceof PokemonNotFoundError)
+        return res.status(404).json({ message: err.message });
       throw err;
     }
   };
@@ -87,7 +90,8 @@ export class PokemonController {
       const pokemon = await this.updateUseCase.execute(req.params.id, req.body);
       return res.status(200).json(pokemon);
     } catch (err) {
-      if (err instanceof PokemonNotFoundError) return res.status(404).json({ message: err.message });
+      if (err instanceof PokemonNotFoundError)
+        return res.status(404).json({ message: err.message });
       throw err;
     }
   };

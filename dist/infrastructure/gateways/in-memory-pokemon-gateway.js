@@ -1,0 +1,76 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.InMemoryPokemonGateway = void 0;
+const artwork = (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+// Mock Gateway: simula a PokéAPI sem internet. Usado em testes (NODE_ENV=test)
+// e em qualquer cenário em que você não queira depender da rede.
+class InMemoryPokemonGateway {
+    pokemons = [
+        {
+            id: 1,
+            name: 'bulbasaur',
+            types: ['grass', 'poison'],
+            baseStats: {
+                hp: 45,
+                attack: 49,
+                defense: 49,
+                specialAttack: 65,
+                specialDefense: 65,
+                speed: 45,
+            },
+            spriteUrl: artwork(1),
+        },
+        {
+            id: 6,
+            name: 'charizard',
+            types: ['fire', 'flying'],
+            baseStats: {
+                hp: 78,
+                attack: 84,
+                defense: 78,
+                specialAttack: 109,
+                specialDefense: 85,
+                speed: 100,
+            },
+            spriteUrl: artwork(6),
+        },
+        {
+            id: 25,
+            name: 'pikachu',
+            types: ['electric'],
+            baseStats: {
+                hp: 35,
+                attack: 55,
+                defense: 40,
+                specialAttack: 50,
+                specialDefense: 50,
+                speed: 90,
+            },
+            spriteUrl: artwork(25),
+        },
+        {
+            id: 273,
+            name: 'seedot',
+            types: ['grass'],
+            baseStats: {
+                hp: 40,
+                attack: 40,
+                defense: 50,
+                specialAttack: 30,
+                specialDefense: 30,
+                speed: 30,
+            },
+            spriteUrl: artwork(273),
+        },
+    ];
+    // Flag auxiliar para simular a PokéAPI fora do ar nos testes
+    shouldThrowError = false;
+    async findByIdOrName(identifier) {
+        if (this.shouldThrowError) {
+            throw new Error('Serviço indisponível');
+        }
+        const key = String(identifier).trim().toLowerCase();
+        return (this.pokemons.find((pokemon) => String(pokemon.id) === key || pokemon.name === key) ?? null);
+    }
+}
+exports.InMemoryPokemonGateway = InMemoryPokemonGateway;

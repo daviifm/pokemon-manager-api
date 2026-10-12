@@ -4,11 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "swagger": "tsx src/main/config/swagger-generator.ts",
     "dev": "npm run swagger && tsx watch src/main/server.ts",
-    "build": "npm run swagger && tsc",
-    "lint": "eslint src --ext .ts"
+    "build": "npm run swagger && tsc && tsc-alias",
+    "lint": "eslint src --ext .ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +24,9 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
     "prettier": "^3.9.6",
+    "prisma": "^6.19.3",
     "swagger-autogen": "^2.23.7",
+    "tsc-alias": "^1.9.7",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3"
   },
@@ -31,6 +34,11 @@
     "esbuild@0.28.2": true
   },
   "dependencies": {
-    "swagger-ui-express": "^5.0.1"
+    "@prisma/client": "^6.19.3",
+    "axios": "^1.20.0",
+    "cockatiel": "^3.2.1",
+    "dotenv": "^18.0.7",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^3.25.76"
   }
 }

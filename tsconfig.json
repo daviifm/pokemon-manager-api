@@ -3,8 +3,7 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "resolveJsonModule": true,
-    "rootDir": "./",
+    "rootDir": "./src",
     "outDir": "./dist",
     "paths": {
       "@domain/*": ["./src/domain/*"],
@@ -13,6 +12,7 @@
       "@main/*": ["./src/main/*"]
     },
     "types": ["node"],
+    "resolveJsonModule": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,

@@ -1,0 +1,802 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "version": "2.0.0",
+        "title": "PokéManager API",
+        "description": "API RESTful para gerenciamento de um catálogo de Pokémons voltado ao competitivo/Nuzlocke (tipos, status base e sprites), construída com Clean Architecture, PostgreSQL (Prisma), validação com Zod e integração com a PokéAPI."
+    },
+    "servers": [
+        {
+            "url": "http://localhost:3333/api/v1"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Pokemons",
+            "description": "Endpoints de gerenciamento de Pokémons"
+        }
+    ],
+    "paths": {
+        "/api/v1/pokemons/stats": {
+            "get": {
+                "tags": [
+                    "Pokemons"
+                ],
+                "summary": "Estatísticas gerais do catálogo",
+                "description": "Retorna o total de Pokémons e a contagem por tipo. Pokémons de tipo duplo contam em ambos os tipos.",
+                "responses": {
+                    "200": {
+                        "description": "Estatísticas acumuladas",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PokemonStats"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pokemons/import": {
+            "post": {
+                "tags": [
+                    "Pokemons"
+                ],
+                "summary": "Importa um Pokémon da PokéAPI",
+                "description": "Busca o Pokémon na PokéAPI (por nome ou número da Pokédex) e o cadastra com tipos, status base e sprite. O id salvo é o número da Pokédex.",
+                "responses": {
+                    "201": {
+                        "description": "Pokémon importado com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PokemonCreatedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dados de entrada inválidos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Pokémon não existe na PokéAPI",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Já existe um Pokémon cadastrado com esse id",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "PokéAPI indisponível (timeout, falha de rede ou circuit breaker aberto)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ImportPokemon"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pokemons/": {
+            "post": {
+                "tags": [
+                    "Pokemons"
+                ],
+                "summary": "Cadastra um novo Pokémon",
+                "description": "Cadastro manual. O id é o número da Pokédex e deve ser único.",
+                "responses": {
+                    "201": {
+                        "description": "Pokémon criado com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PokemonCreatedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dados de entrada inválidos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Já existe um Pokémon cadastrado com esse id",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreatePokemon"
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "Pokemons"
+                ],
+                "summary": "Lista os Pokémons",
+                "description": "Lista todos os Pokémons ordenados pelo número da Pokédex. Aceita filtro opcional por tipo.",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Filtra por tipo (ex: grass, fire, water)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de Pokémons",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Pokemon"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Filtro inválido",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pokemons/{id}": {
+            "get": {
+                "tags": [
+                    "Pokemons"
+                ],
+                "summary": "Busca um Pokémon pelo número da Pokédex",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da Pokédex (ex: 25)",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pokémon encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Pokemon"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Id inválido",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Pokémon não encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Pokemons"
+                ],
+                "summary": "Substitui um Pokémon (atualização completa)",
+                "description": "PUT substitui o recurso inteiro: todos os campos (exceto o id) são obrigatórios. Para alterar só alguns campos, use PATCH.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da Pokédex do Pokémon a ser substituído",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pokémon atualizado com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Pokemon"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dados de entrada inválidos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Pokémon não encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReplacePokemon"
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Pokemons"
+                ],
+                "summary": "Atualiza parcialmente um Pokémon",
+                "description": "PATCH altera apenas os campos enviados (ao menos um).",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da Pokédex do Pokémon a ser atualizado",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pokémon atualizado com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Pokemon"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dados de entrada inválidos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Pokémon não encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchPokemon"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Pokemons"
+                ],
+                "summary": "Remove um Pokémon",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da Pokédex do Pokémon a ser removido",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Pokémon removido com sucesso"
+                    },
+                    "400": {
+                        "description": "Id inválido",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Pokémon não encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Pokemon": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "bulbasaur"
+                    },
+                    "types": {
+                        "type": "array",
+                        "example": [
+                            "grass",
+                            "poison"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "baseStats": {
+                        "type": "object",
+                        "properties": {
+                            "hp": {
+                                "type": "number",
+                                "example": 45
+                            },
+                            "attack": {
+                                "type": "number",
+                                "example": 49
+                            },
+                            "defense": {
+                                "type": "number",
+                                "example": 49
+                            },
+                            "specialAttack": {
+                                "type": "number",
+                                "example": 65
+                            },
+                            "specialDefense": {
+                                "type": "number",
+                                "example": 65
+                            },
+                            "speed": {
+                                "type": "number",
+                                "example": 45
+                            },
+                            "total": {
+                                "type": "number",
+                                "example": 318
+                            }
+                        }
+                    },
+                    "spriteUrl": {
+                        "type": "string",
+                        "example": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+                    }
+                }
+            },
+            "CreatePokemon": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "bulbasaur"
+                    },
+                    "types": {
+                        "type": "array",
+                        "example": [
+                            "grass",
+                            "poison"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "baseStats": {
+                        "type": "object",
+                        "properties": {
+                            "hp": {
+                                "type": "number",
+                                "example": 45
+                            },
+                            "attack": {
+                                "type": "number",
+                                "example": 49
+                            },
+                            "defense": {
+                                "type": "number",
+                                "example": 49
+                            },
+                            "specialAttack": {
+                                "type": "number",
+                                "example": 65
+                            },
+                            "specialDefense": {
+                                "type": "number",
+                                "example": 65
+                            },
+                            "speed": {
+                                "type": "number",
+                                "example": 45
+                            }
+                        }
+                    },
+                    "spriteUrl": {
+                        "type": "string",
+                        "example": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "types",
+                    "baseStats"
+                ]
+            },
+            "ReplacePokemon": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "bulbasaur"
+                    },
+                    "types": {
+                        "type": "array",
+                        "example": [
+                            "grass",
+                            "poison"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "baseStats": {
+                        "type": "object",
+                        "properties": {
+                            "hp": {
+                                "type": "number",
+                                "example": 45
+                            },
+                            "attack": {
+                                "type": "number",
+                                "example": 49
+                            },
+                            "defense": {
+                                "type": "number",
+                                "example": 49
+                            },
+                            "specialAttack": {
+                                "type": "number",
+                                "example": 65
+                            },
+                            "specialDefense": {
+                                "type": "number",
+                                "example": 65
+                            },
+                            "speed": {
+                                "type": "number",
+                                "example": 45
+                            }
+                        }
+                    },
+                    "spriteUrl": {
+                        "type": "string",
+                        "example": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+                    }
+                },
+                "required": [
+                    "name",
+                    "types",
+                    "baseStats"
+                ]
+            },
+            "PatchPokemon": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "bulbasaur"
+                    },
+                    "types": {
+                        "type": "array",
+                        "example": [
+                            "grass",
+                            "poison"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "baseStats": {
+                        "type": "object",
+                        "properties": {
+                            "hp": {
+                                "type": "number",
+                                "example": 45
+                            },
+                            "attack": {
+                                "type": "number",
+                                "example": 49
+                            },
+                            "defense": {
+                                "type": "number",
+                                "example": 49
+                            },
+                            "specialAttack": {
+                                "type": "number",
+                                "example": 65
+                            },
+                            "specialDefense": {
+                                "type": "number",
+                                "example": 65
+                            },
+                            "speed": {
+                                "type": "number",
+                                "example": 45
+                            }
+                        }
+                    }
+                }
+            },
+            "ImportPokemon": {
+                "type": "object",
+                "properties": {
+                    "pokemon": {
+                        "type": "string",
+                        "example": "pikachu"
+                    }
+                },
+                "required": [
+                    "pokemon"
+                ]
+            },
+            "PokemonCreatedResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "Pokémon cadastrado com sucesso!"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "number",
+                                "example": 1
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "bulbasaur"
+                            },
+                            "types": {
+                                "type": "array",
+                                "example": [
+                                    "grass",
+                                    "poison"
+                                ],
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "baseStats": {
+                                "type": "object",
+                                "properties": {
+                                    "hp": {
+                                        "type": "number",
+                                        "example": 45
+                                    },
+                                    "attack": {
+                                        "type": "number",
+                                        "example": 49
+                                    },
+                                    "defense": {
+                                        "type": "number",
+                                        "example": 49
+                                    },
+                                    "specialAttack": {
+                                        "type": "number",
+                                        "example": 65
+                                    },
+                                    "specialDefense": {
+                                        "type": "number",
+                                        "example": 65
+                                    },
+                                    "speed": {
+                                        "type": "number",
+                                        "example": 45
+                                    },
+                                    "total": {
+                                        "type": "number",
+                                        "example": 318
+                                    }
+                                }
+                            },
+                            "spriteUrl": {
+                                "type": "string",
+                                "example": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+                            }
+                        }
+                    }
+                }
+            },
+            "PokemonStats": {
+                "type": "object",
+                "properties": {
+                    "totalPokemons": {
+                        "type": "number",
+                        "example": 4
+                    },
+                    "typesCount": {
+                        "type": "object",
+                        "properties": {
+                            "grass": {
+                                "type": "number",
+                                "example": 2
+                            },
+                            "poison": {
+                                "type": "number",
+                                "example": 1
+                            },
+                            "fire": {
+                                "type": "number",
+                                "example": 1
+                            }
+                        }
+                    }
+                }
+            },
+            "ErrorResponse": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "example": "error"
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Pokémon #25 não encontrado(a)"
+                    }
+                }
+            },
+            "ValidationErrorResponse": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "example": "error"
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Dados de entrada inválidos"
+                    },
+                    "details": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "field": {
+                                    "type": "string",
+                                    "example": "types.0"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "example": "Tipo inválido. Use um destes: normal, fire, ..."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

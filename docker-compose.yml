@@ -1,0 +1,85 @@
+services:
+  # Serviço 1: A API (Node.js + TypeScript)
+  api:
+    build:
+      context: .
+      target: runner
+    container_name: pokemanager_api
+    restart: unless-stopped
+    ports:
+      - '${PORT:-3333}:3333'
+    environment:
+      NODE_ENV: production
+      PORT: 3333
+      # Dentro da rede do Docker o banco NÃO é "localhost": é o nome do serviço (postgres)
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - manager_network
+
+  # Serviço 2: Aplica as migrations do Prisma (roda uma vez e termina)
+  migrate:
+    build:
+      context: .
+      target: builder
+    container_name: pokemanager_migrate
+    command: npx prisma migrate deploy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - manager_network
+
+  # Serviço 3: Banco de Dados PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: pokemanager_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - manager_network
+
+  # Serviço 4: Interface de Gerenciamento pgAdmin 4 (http://localhost:5050)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pokemanager_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - '5050:80'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - manager_network
+
+# Persistência de dados para o Banco e o pgAdmin
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+# Rede interna privada para comunicação entre os containers
+networks:
+  manager_network:
+    driver: bridge

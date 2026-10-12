@@ -1,0 +1,31 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// O `id` é o número da Pokédex Nacional (ex: Bulbasaur = 1, Pikachu = 25).
+// Repare que NÃO há @default(autoincrement()): quem informa o id é o cliente
+// (ou a PokéAPI, no fluxo de importação). A PRIMARY KEY garante, no nível do
+// próprio banco, que dois Pokémons nunca tenham o mesmo id (erro P2002).
+model Pokemon {
+  id             Int      @id
+  name           String
+  types          String[] // 1 ou 2 tipos (ex: ["grass", "poison"])
+  hp             Int
+  attack         Int
+  defense        Int
+  specialAttack  Int      @map("special_attack")
+  specialDefense Int      @map("special_defense")
+  speed          Int
+  spriteUrl      String?  @map("sprite_url")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("pokemons")
+}
