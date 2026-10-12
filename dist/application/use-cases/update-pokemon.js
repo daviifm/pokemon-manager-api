@@ -1,9 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdatePokemonUseCase = void 0;
-// src/application/use-cases/update-pokemon.ts
-const pokemon_1 = require("@domain/entities/pokemon");
-const not_found_error_1 = require("@domain/errors/not-found-error");
+const not_found_error_1 = require("../../domain/errors/not-found-error.js");
+const ensure_team_has_room_1 = require("./ensure-team-has-room");
 class UpdatePokemonUseCase {
     pokemonRepository;
     constructor(pokemonRepository) {
@@ -12,16 +11,15 @@ class UpdatePokemonUseCase {
     async execute(id, data) {
         const existing = await this.pokemonRepository.findById(id);
         if (!existing) {
-            throw new not_found_error_1.NotFoundError(`Pokémon #${id}`);
+            throw new not_found_error_1.NotFoundError('Pokémon não encontrado');
         }
-        // Mescla o que já existe com o que chegou. Criar uma NOVA entidade (em vez
-        // de mutar a antiga) faz o construtor revalidar todas as regras de domínio.
-        const updated = new pokemon_1.Pokemon({
-            id: existing.id,
-            name: data.name ?? existing.name,
-            types: data.types ?? existing.types,
-            baseStats: data.baseStats ?? existing.baseStats,
-            spriteUrl: data.spriteUrl === undefined ? existing.spriteUrl : data.spriteUrl,
+        // Mudou de treinador? Então o time de destino precisa ter vaga.
+        if (data.trainerId && data.trainerId !== existing.trainerId) {
+            await (0, ensure_team_has_room_1.ensureTeamHasRoom)(this.pokemonRepository, data.trainerId);
+        }
+        const updated = existing.with({
+            level: data.level,
+            trainerId: data.trainerId,
         });
         await this.pokemonRepository.update(updated);
         return updated;

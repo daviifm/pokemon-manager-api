@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PokemonController = void 0;
-const PokemonNotFoundError_1 = require("@domain/errors/PokemonNotFoundError");
+const PokemonNotFoundError_1 = require("../../../domain/errors/PokemonNotFoundError.js");
 class PokemonController {
     createUseCase;
     listUseCase;

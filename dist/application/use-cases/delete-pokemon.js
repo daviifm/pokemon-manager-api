@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DeletePokemonUseCase = void 0;
 // src/application/use-cases/delete-pokemon.ts
-const not_found_error_1 = require("@domain/errors/not-found-error");
+const not_found_error_1 = require("../../domain/errors/not-found-error.js");
 class DeletePokemonUseCase {
     pokemonRepository;
     constructor(pokemonRepository) {
@@ -11,7 +11,7 @@ class DeletePokemonUseCase {
     async execute(id) {
         const pokemon = await this.pokemonRepository.findById(id);
         if (!pokemon) {
-            throw new not_found_error_1.NotFoundError(`Pokémon #${id}`);
+            throw new not_found_error_1.NotFoundError('Pokémon não encontrado');
         }
         await this.pokemonRepository.delete(id);
     }

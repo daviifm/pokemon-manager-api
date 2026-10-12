@@ -1,7 +1,7 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "version": "2.0.0",
+        "version": "2.1.0",
         "title": "PokéManager API",
         "description": "API RESTful para gerenciamento de um catálogo de Pokémons voltado ao competitivo/Nuzlocke (tipos, status base e sprites), construída com Clean Architecture, PostgreSQL (Prisma), validação com Zod e integração com a PokéAPI."
     },
@@ -13,7 +13,11 @@
     "tags": [
         {
             "name": "Pokemons",
-            "description": "Endpoints de gerenciamento de Pokémons"
+            "description": "Catálogo de Pokémons (dados enriquecidos pela PokéAPI)"
+        },
+        {
+            "name": "Trainers",
+            "description": "Treinadores e seus times (máximo de 6 Pokémons)"
         }
     ],
     "paths": {
@@ -22,11 +26,11 @@
                 "tags": [
                     "Pokemons"
                 ],
-                "summary": "Estatísticas gerais do catálogo",
-                "description": "Retorna o total de Pokémons e a contagem por tipo. Pokémons de tipo duplo contam em ambos os tipos.",
+                "summary": "Estatísticas do catálogo",
+                "description": "Total de Pokémons e contagem por tipo (tipo duplo conta nos dois tipos).",
                 "responses": {
                     "200": {
-                        "description": "Estatísticas acumuladas",
+                        "description": "Estatísticas",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -38,71 +42,43 @@
                 }
             }
         },
-        "/api/v1/pokemons/import": {
-            "post": {
+        "/api/v1/pokemons/search": {
+            "get": {
                 "tags": [
                     "Pokemons"
                 ],
-                "summary": "Importa um Pokémon da PokéAPI",
-                "description": "Busca o Pokémon na PokéAPI (por nome ou número da Pokédex) e o cadastra com tipos, status base e sprite. O id salvo é o número da Pokédex.",
+                "summary": "Busca por nome (parcial)",
+                "description": "Busca parcial, sem diferenciar maiúsculas de minúsculas (ex: \"pika\" encontra \"pikachu\").",
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "required": true,
+                        "description": "Trecho do nome",
+                        "example": "pika",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
-                    "201": {
-                        "description": "Pokémon importado com sucesso",
+                    "200": {
+                        "description": "Pokémons encontrados",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PokemonCreatedResponse"
+                                    "$ref": "#/components/schemas/PokemonListSimpleResponse"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Dados de entrada inválidos",
+                        "description": "Parâmetro inválido",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/ValidationErrorResponse"
                                 }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Pokémon não existe na PokéAPI",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Já existe um Pokémon cadastrado com esse id",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "503": {
-                        "description": "PokéAPI indisponível (timeout, falha de rede ou circuit breaker aberto)",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                },
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ImportPokemon"
                             }
                         }
                     }
@@ -114,11 +90,11 @@
                 "tags": [
                     "Pokemons"
                 ],
-                "summary": "Cadastra um novo Pokémon",
-                "description": "Cadastro manual. O id é o número da Pokédex e deve ser único.",
+                "summary": "Cadastra um Pokémon",
+                "description": "Informe só o nome da espécie e o nível. Tipos, status base, sprite, experiência, altura e peso são buscados na PokéAPI. Se trainerId for informado, vale a regra dos 6 Pokémons por time.",
                 "responses": {
                     "201": {
-                        "description": "Pokémon criado com sucesso",
+                        "description": "Criado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -128,7 +104,7 @@
                         }
                     },
                     "400": {
-                        "description": "Dados de entrada inválidos",
+                        "description": "Dados inválidos",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -137,8 +113,28 @@
                             }
                         }
                     },
+                    "404": {
+                        "description": "Espécie não existe na PokéAPI",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
                     "409": {
-                        "description": "Já existe um Pokémon cadastrado com esse id",
+                        "description": "Time do treinador já tem 6 Pokémons",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "PokéAPI indisponível",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -163,35 +159,71 @@
                 "tags": [
                     "Pokemons"
                 ],
-                "summary": "Lista os Pokémons",
-                "description": "Lista todos os Pokémons ordenados pelo número da Pokédex. Aceita filtro opcional por tipo.",
+                "summary": "Lista Pokémons (filtros + paginação)",
+                "description": "",
                 "parameters": [
                     {
                         "name": "type",
                         "in": "query",
-                        "description": "Filtra por tipo (ex: grass, fire, water)",
-                        "required": false,
+                        "description": "Filtra por tipo (ex: fire)",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "minLevel",
+                        "in": "query",
+                        "description": "Nível mínimo (padrão 1)",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "maxLevel",
+                        "in": "query",
+                        "description": "Nível máximo (padrão 100)",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "trainerId",
+                        "in": "query",
+                        "description": "UUID do treinador",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Página (padrão 1)",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Itens por página (padrão 10, máximo 50)",
+                        "schema": {
+                            "type": "integer"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Lista de Pokémons",
+                        "description": "Página de Pokémons",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Pokemon"
-                                    }
+                                    "$ref": "#/components/schemas/PokemonListResponse"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Filtro inválido",
+                        "description": "Filtro inválido (ex: limit=mil, type=DIGIMON)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -208,32 +240,32 @@
                 "tags": [
                     "Pokemons"
                 ],
-                "summary": "Busca um Pokémon pelo número da Pokédex",
+                "summary": "Busca um Pokémon pelo id",
                 "description": "",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "description": "Número da Pokédex (ex: 25)",
+                        "description": "UUID do Pokémon",
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Pokémon encontrado",
+                        "description": "Pokémon",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Pokemon"
+                                    "$ref": "#/components/schemas/PokemonResponse"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Id inválido",
+                        "description": "Id malformado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -243,7 +275,7 @@
                         }
                     },
                     "404": {
-                        "description": "Pokémon não encontrado",
+                        "description": "Não encontrado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -258,32 +290,32 @@
                 "tags": [
                     "Pokemons"
                 ],
-                "summary": "Substitui um Pokémon (atualização completa)",
-                "description": "PUT substitui o recurso inteiro: todos os campos (exceto o id) são obrigatórios. Para alterar só alguns campos, use PATCH.",
+                "summary": "Substitui nível e treinador (PUT)",
+                "description": "Substitui os campos editáveis. trainerId ausente ou null deixa o Pokémon selvagem. Trocar de treinador respeita a regra dos 6.",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "description": "Número da Pokédex do Pokémon a ser substituído",
+                        "description": "UUID do Pokémon",
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Pokémon atualizado com sucesso",
+                        "description": "Atualizado",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Pokemon"
+                                    "$ref": "#/components/schemas/PokemonCreatedResponse"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Dados de entrada inválidos",
+                        "description": "Dados inválidos",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -293,7 +325,17 @@
                         }
                     },
                     "404": {
-                        "description": "Pokémon não encontrado",
+                        "description": "Não encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Time do novo treinador está cheio",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -314,36 +356,71 @@
                     }
                 }
             },
-            "patch": {
+            "delete": {
                 "tags": [
                     "Pokemons"
                 ],
-                "summary": "Atualiza parcialmente um Pokémon",
-                "description": "PATCH altera apenas os campos enviados (ao menos um).",
+                "summary": "Remove um Pokémon",
+                "description": "",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "description": "Número da Pokédex do Pokémon a ser atualizado",
+                        "description": "UUID do Pokémon",
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Removido (sem corpo)"
+                    },
+                    "404": {
+                        "description": "Não encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pokemons/{id}/level": {
+            "patch": {
+                "tags": [
+                    "Pokemons"
+                ],
+                "summary": "Atualiza só o nível",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "UUID do Pokémon",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Pokémon atualizado com sucesso",
+                        "description": "Nível atualizado",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Pokemon"
+                                    "$ref": "#/components/schemas/PokemonCreatedResponse"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Dados de entrada inválidos",
+                        "description": "Nível inválido (1 a 100)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -353,7 +430,7 @@
                         }
                     },
                     "404": {
-                        "description": "Pokémon não encontrado",
+                        "description": "Não encontrado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -368,35 +445,114 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/PatchPokemon"
+                                "$ref": "#/components/schemas/PatchLevel"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/trainers/": {
+            "post": {
+                "tags": [
+                    "Trainers"
+                ],
+                "summary": "Cadastra um treinador",
+                "description": "",
+                "responses": {
+                    "201": {
+                        "description": "Criado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrainerCreatedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dados inválidos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "E-mail já cadastrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTrainer"
                             }
                         }
                     }
                 }
             },
-            "delete": {
+            "get": {
                 "tags": [
-                    "Pokemons"
+                    "Trainers"
                 ],
-                "summary": "Remove um Pokémon",
+                "summary": "Lista treinadores",
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "Lista de treinadores",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrainerListResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/trainers/{id}": {
+            "get": {
+                "tags": [
+                    "Trainers"
+                ],
+                "summary": "Busca um treinador pelo id",
                 "description": "",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "description": "Número da Pokédex do Pokémon a ser removido",
+                        "description": "UUID do treinador",
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "Pokémon removido com sucesso"
+                    "200": {
+                        "description": "Treinador",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrainerCreatedResponse"
+                                }
+                            }
+                        }
                     },
                     "400": {
-                        "description": "Id inválido",
+                        "description": "Id malformado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -406,7 +562,110 @@
                         }
                     },
                     "404": {
-                        "description": "Pokémon não encontrado",
+                        "description": "Não encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Trainers"
+                ],
+                "summary": "Atualiza parcialmente um treinador",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "UUID do treinador",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Atualizado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrainerCreatedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dados inválidos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Não encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "E-mail já cadastrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateTrainer"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Trainers"
+                ],
+                "summary": "Remove um treinador",
+                "description": "Os Pokémons do treinador NÃO são apagados: ficam selvagens (trainerId = null).",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "UUID do treinador",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Removido (sem corpo)"
+                    },
+                    "404": {
+                        "description": "Não encontrado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -425,6 +684,10 @@
                 "type": "object",
                 "properties": {
                     "id": {
+                        "type": "string",
+                        "example": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+                    },
+                    "pokedexNumber": {
                         "type": "number",
                         "example": 1
                     },
@@ -441,6 +704,10 @@
                         "items": {
                             "type": "string"
                         }
+                    },
+                    "level": {
+                        "type": "number",
+                        "example": 5
                     },
                     "baseStats": {
                         "type": "object",
@@ -475,202 +742,92 @@
                             }
                         }
                     },
+                    "trainerId": {
+                        "type": "string",
+                        "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    },
                     "spriteUrl": {
                         "type": "string",
                         "example": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+                    },
+                    "baseExperience": {
+                        "type": "number",
+                        "example": 64
+                    },
+                    "height": {
+                        "type": "number",
+                        "example": 7
+                    },
+                    "weight": {
+                        "type": "number",
+                        "example": 69
                     }
                 }
             },
             "CreatePokemon": {
                 "type": "object",
                 "properties": {
-                    "id": {
-                        "type": "number",
-                        "example": 1
-                    },
                     "name": {
                         "type": "string",
                         "example": "bulbasaur"
                     },
-                    "types": {
-                        "type": "array",
-                        "example": [
-                            "grass",
-                            "poison"
-                        ],
-                        "items": {
-                            "type": "string"
-                        }
-                    },
-                    "baseStats": {
-                        "type": "object",
-                        "properties": {
-                            "hp": {
-                                "type": "number",
-                                "example": 45
-                            },
-                            "attack": {
-                                "type": "number",
-                                "example": 49
-                            },
-                            "defense": {
-                                "type": "number",
-                                "example": 49
-                            },
-                            "specialAttack": {
-                                "type": "number",
-                                "example": 65
-                            },
-                            "specialDefense": {
-                                "type": "number",
-                                "example": 65
-                            },
-                            "speed": {
-                                "type": "number",
-                                "example": 45
-                            }
-                        }
-                    },
-                    "spriteUrl": {
+                    "type": {
                         "type": "string",
-                        "example": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+                        "example": "grass"
+                    },
+                    "level": {
+                        "type": "number",
+                        "example": 5
+                    },
+                    "trainerId": {
+                        "type": "string",
+                        "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                     }
                 },
                 "required": [
-                    "id",
                     "name",
-                    "types",
-                    "baseStats"
+                    "level"
                 ]
             },
             "ReplacePokemon": {
                 "type": "object",
                 "properties": {
-                    "name": {
+                    "level": {
+                        "type": "number",
+                        "example": 20
+                    },
+                    "trainerId": {
                         "type": "string",
-                        "example": "bulbasaur"
-                    },
-                    "types": {
-                        "type": "array",
-                        "example": [
-                            "grass",
-                            "poison"
-                        ],
-                        "items": {
-                            "type": "string"
-                        }
-                    },
-                    "baseStats": {
-                        "type": "object",
-                        "properties": {
-                            "hp": {
-                                "type": "number",
-                                "example": 45
-                            },
-                            "attack": {
-                                "type": "number",
-                                "example": 49
-                            },
-                            "defense": {
-                                "type": "number",
-                                "example": 49
-                            },
-                            "specialAttack": {
-                                "type": "number",
-                                "example": 65
-                            },
-                            "specialDefense": {
-                                "type": "number",
-                                "example": 65
-                            },
-                            "speed": {
-                                "type": "number",
-                                "example": 45
-                            }
-                        }
-                    },
-                    "spriteUrl": {
-                        "type": "string",
-                        "example": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+                        "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                     }
                 },
                 "required": [
-                    "name",
-                    "types",
-                    "baseStats"
+                    "level"
                 ]
             },
-            "PatchPokemon": {
+            "PatchLevel": {
                 "type": "object",
                 "properties": {
-                    "name": {
-                        "type": "string",
-                        "example": "bulbasaur"
-                    },
-                    "types": {
-                        "type": "array",
-                        "example": [
-                            "grass",
-                            "poison"
-                        ],
-                        "items": {
-                            "type": "string"
-                        }
-                    },
-                    "baseStats": {
-                        "type": "object",
-                        "properties": {
-                            "hp": {
-                                "type": "number",
-                                "example": 45
-                            },
-                            "attack": {
-                                "type": "number",
-                                "example": 49
-                            },
-                            "defense": {
-                                "type": "number",
-                                "example": 49
-                            },
-                            "specialAttack": {
-                                "type": "number",
-                                "example": 65
-                            },
-                            "specialDefense": {
-                                "type": "number",
-                                "example": 65
-                            },
-                            "speed": {
-                                "type": "number",
-                                "example": 45
-                            }
-                        }
-                    }
-                }
-            },
-            "ImportPokemon": {
-                "type": "object",
-                "properties": {
-                    "pokemon": {
-                        "type": "string",
-                        "example": "pikachu"
+                    "level": {
+                        "type": "number",
+                        "example": 36
                     }
                 },
                 "required": [
-                    "pokemon"
+                    "level"
                 ]
             },
-            "PokemonCreatedResponse": {
+            "PokemonResponse": {
                 "type": "object",
                 "properties": {
-                    "message": {
-                        "type": "string",
-                        "example": "Pokémon cadastrado com sucesso!"
-                    },
                     "data": {
                         "type": "object",
                         "properties": {
                             "id": {
+                                "type": "string",
+                                "example": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+                            },
+                            "pokedexNumber": {
                                 "type": "number",
                                 "example": 1
                             },
@@ -687,6 +844,10 @@
                                 "items": {
                                     "type": "string"
                                 }
+                            },
+                            "level": {
+                                "type": "number",
+                                "example": 5
                             },
                             "baseStats": {
                                 "type": "object",
@@ -721,9 +882,319 @@
                                     }
                                 }
                             },
+                            "trainerId": {
+                                "type": "string",
+                                "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                            },
                             "spriteUrl": {
                                 "type": "string",
                                 "example": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+                            },
+                            "baseExperience": {
+                                "type": "number",
+                                "example": 64
+                            },
+                            "height": {
+                                "type": "number",
+                                "example": 7
+                            },
+                            "weight": {
+                                "type": "number",
+                                "example": 69
+                            }
+                        }
+                    }
+                }
+            },
+            "PokemonCreatedResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "Pokémon cadastrado com sucesso!"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "example": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+                            },
+                            "pokedexNumber": {
+                                "type": "number",
+                                "example": 1
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "bulbasaur"
+                            },
+                            "types": {
+                                "type": "array",
+                                "example": [
+                                    "grass",
+                                    "poison"
+                                ],
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "level": {
+                                "type": "number",
+                                "example": 5
+                            },
+                            "baseStats": {
+                                "type": "object",
+                                "properties": {
+                                    "hp": {
+                                        "type": "number",
+                                        "example": 45
+                                    },
+                                    "attack": {
+                                        "type": "number",
+                                        "example": 49
+                                    },
+                                    "defense": {
+                                        "type": "number",
+                                        "example": 49
+                                    },
+                                    "specialAttack": {
+                                        "type": "number",
+                                        "example": 65
+                                    },
+                                    "specialDefense": {
+                                        "type": "number",
+                                        "example": 65
+                                    },
+                                    "speed": {
+                                        "type": "number",
+                                        "example": 45
+                                    },
+                                    "total": {
+                                        "type": "number",
+                                        "example": 318
+                                    }
+                                }
+                            },
+                            "trainerId": {
+                                "type": "string",
+                                "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                            },
+                            "spriteUrl": {
+                                "type": "string",
+                                "example": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+                            },
+                            "baseExperience": {
+                                "type": "number",
+                                "example": 64
+                            },
+                            "height": {
+                                "type": "number",
+                                "example": 7
+                            },
+                            "weight": {
+                                "type": "number",
+                                "example": 69
+                            }
+                        }
+                    }
+                }
+            },
+            "PokemonListResponse": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "example": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+                                },
+                                "pokedexNumber": {
+                                    "type": "number",
+                                    "example": 1
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "example": "bulbasaur"
+                                },
+                                "types": {
+                                    "type": "array",
+                                    "example": [
+                                        "grass",
+                                        "poison"
+                                    ],
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "level": {
+                                    "type": "number",
+                                    "example": 5
+                                },
+                                "baseStats": {
+                                    "type": "object",
+                                    "properties": {
+                                        "hp": {
+                                            "type": "number",
+                                            "example": 45
+                                        },
+                                        "attack": {
+                                            "type": "number",
+                                            "example": 49
+                                        },
+                                        "defense": {
+                                            "type": "number",
+                                            "example": 49
+                                        },
+                                        "specialAttack": {
+                                            "type": "number",
+                                            "example": 65
+                                        },
+                                        "specialDefense": {
+                                            "type": "number",
+                                            "example": 65
+                                        },
+                                        "speed": {
+                                            "type": "number",
+                                            "example": 45
+                                        },
+                                        "total": {
+                                            "type": "number",
+                                            "example": 318
+                                        }
+                                    }
+                                },
+                                "trainerId": {
+                                    "type": "string",
+                                    "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                                },
+                                "spriteUrl": {
+                                    "type": "string",
+                                    "example": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+                                },
+                                "baseExperience": {
+                                    "type": "number",
+                                    "example": 64
+                                },
+                                "height": {
+                                    "type": "number",
+                                    "example": 7
+                                },
+                                "weight": {
+                                    "type": "number",
+                                    "example": 69
+                                }
+                            }
+                        }
+                    },
+                    "meta": {
+                        "type": "object",
+                        "properties": {
+                            "page": {
+                                "type": "number",
+                                "example": 1
+                            },
+                            "limit": {
+                                "type": "number",
+                                "example": 10
+                            },
+                            "total": {
+                                "type": "number",
+                                "example": 1
+                            }
+                        }
+                    }
+                }
+            },
+            "PokemonListSimpleResponse": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "example": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+                                },
+                                "pokedexNumber": {
+                                    "type": "number",
+                                    "example": 1
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "example": "bulbasaur"
+                                },
+                                "types": {
+                                    "type": "array",
+                                    "example": [
+                                        "grass",
+                                        "poison"
+                                    ],
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "level": {
+                                    "type": "number",
+                                    "example": 5
+                                },
+                                "baseStats": {
+                                    "type": "object",
+                                    "properties": {
+                                        "hp": {
+                                            "type": "number",
+                                            "example": 45
+                                        },
+                                        "attack": {
+                                            "type": "number",
+                                            "example": 49
+                                        },
+                                        "defense": {
+                                            "type": "number",
+                                            "example": 49
+                                        },
+                                        "specialAttack": {
+                                            "type": "number",
+                                            "example": 65
+                                        },
+                                        "specialDefense": {
+                                            "type": "number",
+                                            "example": 65
+                                        },
+                                        "speed": {
+                                            "type": "number",
+                                            "example": 45
+                                        },
+                                        "total": {
+                                            "type": "number",
+                                            "example": 318
+                                        }
+                                    }
+                                },
+                                "trainerId": {
+                                    "type": "string",
+                                    "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                                },
+                                "spriteUrl": {
+                                    "type": "string",
+                                    "example": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+                                },
+                                "baseExperience": {
+                                    "type": "number",
+                                    "example": 64
+                                },
+                                "height": {
+                                    "type": "number",
+                                    "example": 7
+                                },
+                                "weight": {
+                                    "type": "number",
+                                    "example": 69
+                                }
                             }
                         }
                     }
@@ -734,14 +1205,14 @@
                 "properties": {
                     "totalPokemons": {
                         "type": "number",
-                        "example": 4
+                        "example": 3
                     },
                     "typesCount": {
                         "type": "object",
                         "properties": {
                             "grass": {
                                 "type": "number",
-                                "example": 2
+                                "example": 1
                             },
                             "poison": {
                                 "type": "number",
@@ -755,6 +1226,117 @@
                     }
                 }
             },
+            "Trainer": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Ash Ketchum"
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "ash@pallet.com"
+                    },
+                    "city": {
+                        "type": "string",
+                        "example": "Pallet Town"
+                    }
+                }
+            },
+            "CreateTrainer": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Ash Ketchum"
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "ash@pallet.com"
+                    },
+                    "city": {
+                        "type": "string",
+                        "example": "Pallet Town"
+                    }
+                },
+                "required": [
+                    "name",
+                    "email",
+                    "city"
+                ]
+            },
+            "UpdateTrainer": {
+                "type": "object",
+                "properties": {
+                    "city": {
+                        "type": "string",
+                        "example": "Viridian City"
+                    }
+                }
+            },
+            "TrainerCreatedResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "Treinador cadastrado com sucesso!"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "Ash Ketchum"
+                            },
+                            "email": {
+                                "type": "string",
+                                "example": "ash@pallet.com"
+                            },
+                            "city": {
+                                "type": "string",
+                                "example": "Pallet Town"
+                            }
+                        }
+                    }
+                }
+            },
+            "TrainerListResponse": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "example": "Ash Ketchum"
+                                },
+                                "email": {
+                                    "type": "string",
+                                    "example": "ash@pallet.com"
+                                },
+                                "city": {
+                                    "type": "string",
+                                    "example": "Pallet Town"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
             "ErrorResponse": {
                 "type": "object",
                 "properties": {
@@ -762,9 +1344,13 @@
                         "type": "string",
                         "example": "error"
                     },
+                    "statusCode": {
+                        "type": "number",
+                        "example": 404
+                    },
                     "message": {
                         "type": "string",
-                        "example": "Pokémon #25 não encontrado(a)"
+                        "example": "Pokémon não encontrado no banco de dados"
                     }
                 }
             },
@@ -774,6 +1360,10 @@
                     "status": {
                         "type": "string",
                         "example": "error"
+                    },
+                    "statusCode": {
+                        "type": "number",
+                        "example": 400
                     },
                     "message": {
                         "type": "string",
@@ -786,11 +1376,11 @@
                             "properties": {
                                 "field": {
                                     "type": "string",
-                                    "example": "types.0"
+                                    "example": "level"
                                 },
                                 "message": {
                                     "type": "string",
-                                    "example": "Tipo inválido. Use um destes: normal, fire, ..."
+                                    "example": "O nível deve ser no máximo 100"
                                 }
                             }
                         }

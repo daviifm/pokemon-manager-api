@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BaseStats = void 0;
 // src/domain/value-objects/base-stats.ts
-const validation_error_1 = require("@domain/errors/validation-error");
+const validation_error_1 = require("../errors/validation-error.js");
 const STAT_LABELS = {
     hp: 'HP',
     attack: 'Attack',

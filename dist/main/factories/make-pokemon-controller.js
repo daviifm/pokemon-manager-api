@@ -1,28 +1,26 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.makePokemonController = makePokemonController;
-const in_memory_pokemon_repository_1 = require("@infrastructure/database/in-memory/in-memory-pokemon-repository");
-const prisma_pokemon_repository_1 = require("@infrastructure/database/prisma/prisma-pokemon-repository");
-const in_memory_pokemon_gateway_1 = require("@infrastructure/gateways/in-memory-pokemon-gateway");
-const poke_api_gateway_1 = require("@infrastructure/gateways/poke-api-gateway");
-const pokemon_controller_1 = require("@infrastructure/http/controllers/pokemon-controller");
-const create_pokemon_1 = require("@application/use-cases/create-pokemon");
-const import_pokemon_from_pokeapi_1 = require("@application/use-cases/import-pokemon-from-pokeapi");
-const list_pokemons_1 = require("@application/use-cases/list-pokemons");
-const get_pokemon_by_id_1 = require("@application/use-cases/get-pokemon-by-id");
-const update_pokemon_1 = require("@application/use-cases/update-pokemon");
-const delete_pokemon_1 = require("@application/use-cases/delete-pokemon");
-const get_pokemon_stats_1 = require("@application/use-cases/get-pokemon-stats");
-// Em testes (NODE_ENV=test) usamos dublês em memória: zero banco, zero internet.
-const isTestEnvironment = process.env.NODE_ENV === 'test';
-// Instâncias únicas: o repositório precisa ser compartilhado por todos os Use
-// Cases e o gateway precisa ser único para o circuit breaker lembrar das falhas.
-const pokemonRepository = isTestEnvironment
-    ? new in_memory_pokemon_repository_1.InMemoryPokemonRepository()
-    : new prisma_pokemon_repository_1.PrismaPokemonRepository();
-const pokemonGateway = isTestEnvironment
-    ? new in_memory_pokemon_gateway_1.InMemoryPokemonGateway()
-    : new poke_api_gateway_1.PokeApiGateway();
+const create_pokemon_1 = require("../../application/use-cases/create-pokemon.js");
+const delete_pokemon_1 = require("../../application/use-cases/delete-pokemon.js");
+const get_pokemon_by_id_1 = require("../../application/use-cases/get-pokemon-by-id.js");
+const get_pokemon_stats_1 = require("../../application/use-cases/get-pokemon-stats.js");
+const list_pokemons_1 = require("../../application/use-cases/list-pokemons.js");
+const search_pokemons_by_name_1 = require("../../application/use-cases/search-pokemons-by-name.js");
+const update_pokemon_level_1 = require("../../application/use-cases/update-pokemon-level.js");
+const update_pokemon_1 = require("../../application/use-cases/update-pokemon.js");
+const in_memory_pokemon_gateway_1 = require("../../infrastructure/gateways/in-memory-pokemon-gateway.js");
+const poke_api_axios_gateway_1 = require("../../infrastructure/gateways/poke-api-axios-gateway.js");
+const pokemon_controller_1 = require("../../infrastructure/http/controllers/pokemon-controller.js");
+const repositories_1 = require("./repositories");
+// USE_EXTERNAL_API=false (ou NODE_ENV=test) troca a PokéAPI real por um gateway
+// em memória: dá para desenvolver offline e rodar testes sem rede.
+function makeGateway() {
+    const useReal = process.env.USE_EXTERNAL_API !== 'false' && process.env.NODE_ENV !== 'test';
+    return useReal ? new poke_api_axios_gateway_1.PokeApiAxiosGateway() : new in_memory_pokemon_gateway_1.InMemoryPokemonGateway();
+}
 function makePokemonController() {
-    return new pokemon_controller_1.PokemonController(new create_pokemon_1.CreatePokemonUseCase(pokemonRepository), new import_pokemon_from_pokeapi_1.ImportPokemonFromPokeApiUseCase(pokemonRepository, pokemonGateway), new list_pokemons_1.ListPokemonsUseCase(pokemonRepository), new get_pokemon_by_id_1.GetPokemonByIdUseCase(pokemonRepository), new update_pokemon_1.UpdatePokemonUseCase(pokemonRepository), new delete_pokemon_1.DeletePokemonUseCase(pokemonRepository), new get_pokemon_stats_1.GetPokemonStatsUseCase(pokemonRepository));
+    const { pokemonRepository } = (0, repositories_1.makeRepositories)();
+    const gateway = makeGateway();
+    return new pokemon_controller_1.PokemonController(new create_pokemon_1.CreatePokemonUseCase(pokemonRepository, gateway), new list_pokemons_1.ListPokemonsUseCase(pokemonRepository), new search_pokemons_by_name_1.SearchPokemonsByNameUseCase(pokemonRepository), new get_pokemon_by_id_1.GetPokemonByIdUseCase(pokemonRepository), new update_pokemon_1.UpdatePokemonUseCase(pokemonRepository), new update_pokemon_level_1.UpdatePokemonLevelUseCase(pokemonRepository), new delete_pokemon_1.DeletePokemonUseCase(pokemonRepository), new get_pokemon_stats_1.GetPokemonStatsUseCase(pokemonRepository));
 }

@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdatePokemonUseCase = void 0;
-const Pokemon_1 = require("@domain/entities/Pokemon");
-const PokemonNotFoundError_1 = require("@domain/errors/PokemonNotFoundError");
+const Pokemon_1 = require("../../domain/entities/Pokemon.js");
+const PokemonNotFoundError_1 = require("../../domain/errors/PokemonNotFoundError.js");
 class UpdatePokemonUseCase {
     repository;
     constructor(repository) {

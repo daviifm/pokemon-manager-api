@@ -6,11 +6,11 @@ import { PokemonRepository } from '@domain/repositories/pokemon-repository';
 export class GetPokemonByIdUseCase {
   constructor(private readonly pokemonRepository: PokemonRepository) {}
 
-  async execute(id: number): Promise<Pokemon> {
+  async execute(id: string): Promise<Pokemon> {
     const pokemon = await this.pokemonRepository.findById(id);
 
     if (!pokemon) {
-      throw new NotFoundError(`Pokémon #${id}`);
+      throw new NotFoundError('Pokémon não encontrado');
     }
 
     return pokemon;

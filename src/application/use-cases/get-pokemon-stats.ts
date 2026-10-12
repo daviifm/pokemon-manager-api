@@ -10,7 +10,7 @@ export class GetPokemonStatsUseCase {
   constructor(private readonly pokemonRepository: PokemonRepository) {}
 
   async execute(): Promise<PokemonCatalogStats> {
-    const pokemons = await this.pokemonRepository.findAll();
+    const pokemons = await this.pokemonRepository.listAll();
     const typesCount: Record<string, number> = {};
 
     for (const pokemon of pokemons) {

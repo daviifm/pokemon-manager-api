@@ -7,7 +7,11 @@ class ListPokemonsUseCase {
         this.pokemonRepository = pokemonRepository;
     }
     async execute(filters) {
-        return this.pokemonRepository.findAll(filters);
+        const { items, total } = await this.pokemonRepository.findAll(filters);
+        return {
+            data: items,
+            meta: { page: filters.page, limit: filters.limit, total },
+        };
     }
 }
 exports.ListPokemonsUseCase = ListPokemonsUseCase;

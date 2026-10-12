@@ -2,27 +2,27 @@
 import { Pokemon } from '@domain/entities/pokemon';
 import { NotFoundError } from '@domain/errors/not-found-error';
 import { PokemonRepository } from '@domain/repositories/pokemon-repository';
-import { UpdatePokemonDTO } from '@application/dtos/update-pokemon-dto';
+import { ReplacePokemonDTO } from '@application/dtos/pokemon-dtos';
+import { ensureTeamHasRoom } from './ensure-team-has-room';
 
 export class UpdatePokemonUseCase {
   constructor(private readonly pokemonRepository: PokemonRepository) {}
 
-  async execute(id: number, data: UpdatePokemonDTO): Promise<Pokemon> {
+  async execute(id: string, data: ReplacePokemonDTO): Promise<Pokemon> {
     const existing = await this.pokemonRepository.findById(id);
 
     if (!existing) {
-      throw new NotFoundError(`Pokémon #${id}`);
+      throw new NotFoundError('Pokémon não encontrado');
     }
 
-    // Mescla o que já existe com o que chegou. Criar uma NOVA entidade (em vez
-    // de mutar a antiga) faz o construtor revalidar todas as regras de domínio.
-    const updated = new Pokemon({
-      id: existing.id,
-      name: data.name ?? existing.name,
-      types: data.types ?? existing.types,
-      baseStats: data.baseStats ?? existing.baseStats,
-      spriteUrl:
-        data.spriteUrl === undefined ? existing.spriteUrl : data.spriteUrl,
+    // Mudou de treinador? Então o time de destino precisa ter vaga.
+    if (data.trainerId && data.trainerId !== existing.trainerId) {
+      await ensureTeamHasRoom(this.pokemonRepository, data.trainerId);
+    }
+
+    const updated = existing.with({
+      level: data.level,
+      trainerId: data.trainerId,
     });
 
     await this.pokemonRepository.update(updated);

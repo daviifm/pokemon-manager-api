@@ -1,0 +1,34 @@
+// src/infrastructure/http/controllers/presenters.ts
+import { Pokemon } from '@domain/entities/pokemon';
+import { Trainer } from '@domain/entities/trainer';
+
+// Presenters: traduzem entidades do domínio para o JSON da API. Necessário porque
+// o `total` (BST) é um getter da classe e o JSON.stringify não o enxergaria.
+export const presentPokemon = (p: Pokemon) => ({
+  id: p.id,
+  pokedexNumber: p.pokedexNumber,
+  name: p.name,
+  types: [...p.types],
+  level: p.level,
+  baseStats: {
+    hp: p.baseStats.hp,
+    attack: p.baseStats.attack,
+    defense: p.baseStats.defense,
+    specialAttack: p.baseStats.specialAttack,
+    specialDefense: p.baseStats.specialDefense,
+    speed: p.baseStats.speed,
+    total: p.baseStats.total,
+  },
+  trainerId: p.trainerId,
+  spriteUrl: p.spriteUrl,
+  baseExperience: p.baseExperience,
+  height: p.height,
+  weight: p.weight,
+});
+
+export const presentTrainer = (t: Trainer) => ({
+  id: t.id,
+  name: t.name,
+  email: t.email,
+  city: t.city,
+});

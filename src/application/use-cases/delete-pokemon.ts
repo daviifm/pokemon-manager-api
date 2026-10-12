@@ -5,11 +5,11 @@ import { PokemonRepository } from '@domain/repositories/pokemon-repository';
 export class DeletePokemonUseCase {
   constructor(private readonly pokemonRepository: PokemonRepository) {}
 
-  async execute(id: number): Promise<void> {
+  async execute(id: string): Promise<void> {
     const pokemon = await this.pokemonRepository.findById(id);
 
     if (!pokemon) {
-      throw new NotFoundError(`Pokémon #${id}`);
+      throw new NotFoundError('Pokémon não encontrado');
     }
 
     await this.pokemonRepository.delete(id);

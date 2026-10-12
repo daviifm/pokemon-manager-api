@@ -8,7 +8,7 @@ exports.PokeApiGateway = void 0;
 const axios_1 = __importDefault(require("axios"));
 const cockatiel_1 = require("cockatiel");
 const zod_1 = require("zod");
-const app_error_1 = require("@domain/errors/app-error");
+const app_error_1 = require("../../domain/errors/app-error.js");
 // ---------------------------------------------------------------------------
 // 1. DTO PRIVADO: reflete a resposta "feia/nativa" da PokéAPI (só o que usamos).
 //    Validamos com Zod porque dado externo é território não confiável: se a

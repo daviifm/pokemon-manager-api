@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ImportPokemonFromPokeApiUseCase = void 0;
 // src/application/use-cases/import-pokemon-from-pokeapi.ts
-const pokemon_1 = require("@domain/entities/pokemon");
-const conflict_error_1 = require("@domain/errors/conflict-error");
-const not_found_error_1 = require("@domain/errors/not-found-error");
+const pokemon_1 = require("../../domain/entities/pokemon.js");
+const conflict_error_1 = require("../../domain/errors/conflict-error.js");
+const not_found_error_1 = require("../../domain/errors/not-found-error.js");
 // Padrão BFF/agregador: o cliente só diz QUAL Pokémon quer (nome ou número da
 // Pokédex) e o backend busca o resto na PokéAPI. Este Use Case não sabe que
 // existe Axios, HTTP ou PokéAPI: só conhece o contrato do Gateway.

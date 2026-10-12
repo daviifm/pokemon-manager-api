@@ -11,6 +11,10 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3333
+      DB_DRIVER: ${DB_DRIVER:-prisma}
+      USE_EXTERNAL_API: ${USE_EXTERNAL_API:-true}
+      POKEAPI_BASE_URL: ${POKEAPI_BASE_URL:-https://pokeapi.co/api/v2}
+      POKEAPI_TIMEOUT_MS: ${POKEAPI_TIMEOUT_MS:-3000}
       # Dentro da rede do Docker o banco NÃO é "localhost": é o nome do serviço (postgres)
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
     depends_on:
@@ -55,7 +59,7 @@ services:
     networks:
       - manager_network
 
-  # Serviço 4: Interface de Gerenciamento pgAdmin 4 (http://localhost:5050)
+  # Serviço 4: Interface de Gerenciamento pgAdmin 4 (http://localhost:8080)
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pokemanager_pgadmin
@@ -64,7 +68,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
-      - '5050:80'
+      - '8080:80'
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     depends_on:

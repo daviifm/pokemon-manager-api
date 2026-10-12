@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateRequest = void 0;
 const zod_1 = require("zod");
-const app_error_1 = require("@domain/errors/app-error");
+const app_error_1 = require("../../../domain/errors/app-error.js");
 const validateRequest = (schemas) => {
     return async (req, _res, next) => {
         try {

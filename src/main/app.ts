@@ -12,6 +12,22 @@ const app = express();
 
 app.use(express.json());
 
+// Health check simples (fora do Swagger)
+app.get('/', (_req, res) => {
+  // #swagger.ignore = true
+  res.status(200).json({
+    status: 'ok',
+    message: 'PokéManager API no ar',
+    docs: '/api/docs',
+  });
+});
+
+// Atalho: /swagger leva para a documentação oficial em /api/docs
+app.get('/swagger', (_req, res) => {
+  // #swagger.ignore = true
+  res.redirect('/api/docs');
+});
+
 // Documentação interativa (Swagger UI)
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerOutput));
 

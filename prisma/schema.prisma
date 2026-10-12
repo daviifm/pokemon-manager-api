@@ -9,14 +9,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// O `id` é o número da Pokédex Nacional (ex: Bulbasaur = 1, Pikachu = 25).
-// Repare que NÃO há @default(autoincrement()): quem informa o id é o cliente
-// (ou a PokéAPI, no fluxo de importação). A PRIMARY KEY garante, no nível do
-// próprio banco, que dois Pokémons nunca tenham o mesmo id (erro P2002).
+// Treinador: quem captura e carrega os Pokémons (time de no máximo 6).
+model Trainer {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String    @db.VarChar(150)
+  email     String    @unique @db.VarChar(255) // @unique => erro P2002 em e-mail duplicado
+  city      String    @db.VarChar(100)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  pokemons  Pokemon[]
+
+  @@map("trainers")
+}
+
+// Pokémon capturado/registrado. O `id` é um UUID (o mesmo Pikachu pode aparecer
+// várias vezes, em times diferentes). O número da Pokédex identifica a ESPÉCIE
+// (`pokedexNumber`) e por isso NÃO é único.
 model Pokemon {
-  id             Int      @id
-  name           String
+  id             String   @id @db.Uuid
+  pokedexNumber  Int      @map("pokedex_number")
+  name           String   @db.VarChar(100)
   types          String[] // 1 ou 2 tipos (ex: ["grass", "poison"])
+  level          Int
   hp             Int
   attack         Int
   defense        Int
@@ -24,8 +37,18 @@ model Pokemon {
   specialDefense Int      @map("special_defense")
   speed          Int
   spriteUrl      String?  @map("sprite_url")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  baseExperience Int?     @map("base_experience")
+  height         Int?
+  weight         Int?
+  trainerId      String?  @map("trainer_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  // Se o treinador for removido, o Pokémon NÃO é apagado: trainer_id vira NULL
+  // (volta a ser selvagem). Integridade referencial garantida pelo próprio banco.
+  trainer Trainer? @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+
+  @@index([trainerId])
+  @@index([name])
   @@map("pokemons")
 }

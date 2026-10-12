@@ -7,7 +7,7 @@ class GetPokemonStatsUseCase {
         this.pokemonRepository = pokemonRepository;
     }
     async execute() {
-        const pokemons = await this.pokemonRepository.findAll();
+        const pokemons = await this.pokemonRepository.listAll();
         const typesCount = {};
         for (const pokemon of pokemons) {
             // Um Pokémon de tipo duplo (ex: Bulbasaur) conta em AMBOS os baldes.

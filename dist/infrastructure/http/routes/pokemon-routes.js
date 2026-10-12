@@ -3,199 +3,116 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.pokemonRoutes = void 0;
 // src/infrastructure/http/routes/pokemon-routes.ts
 const express_1 = require("express");
-const validate_request_1 = require("@infrastructure/http/middlewares/validate-request");
-const pokemon_schemas_1 = require("@infrastructure/http/schemas/pokemon-schemas");
-const make_pokemon_controller_1 = require("@main/factories/make-pokemon-controller");
+const make_pokemon_controller_1 = require("../../../main/factories/make-pokemon-controller.js");
+const async_handler_1 = require("../middlewares/async-handler");
+const validate_request_1 = require("../middlewares/validate-request");
+const pokemon_schemas_1 = require("../schemas/pokemon-schemas");
 const pokemonRoutes = (0, express_1.Router)();
 exports.pokemonRoutes = pokemonRoutes;
-const pokemonController = (0, make_pokemon_controller_1.makePokemonController)();
-// ⚠️ ORDEM IMPORTA: rotas fixas (/stats, /import) ANTES das dinâmicas (/:id).
-// O Express usa a primeira rota que casar, e "stats" casaria com /:id.
-pokemonRoutes.get('/stats', (req, res, next) => {
+const controller = (0, make_pokemon_controller_1.makePokemonController)();
+// ATENÇÃO À ORDEM: rotas fixas (/stats, /search) vêm ANTES de /:id; senão o
+// Express leria "stats" como se fosse um id.
+pokemonRoutes.get('/stats', (0, async_handler_1.asyncHandler)(async (req, res) => {
+    /*
+    #swagger.auto = false
+    #swagger.tags = ['Pokemons']
+    #swagger.summary = 'Estatísticas do catálogo'
+    #swagger.description = 'Total de Pokémons e contagem por tipo (tipo duplo conta nos dois tipos).'
+    #swagger.responses[200] = { description: 'Estatísticas', content: { 'application/json': { schema: { $ref: '#/components/schemas/PokemonStats' } } } }
+  */
+    return controller.stats(req, res);
+}));
+pokemonRoutes.get('/search', (0, validate_request_1.validateRequest)({ query: pokemon_schemas_1.searchPokemonsQuerySchema }), (0, async_handler_1.asyncHandler)(async (req, res) => {
     /*
       #swagger.auto = false
       #swagger.tags = ['Pokemons']
-      #swagger.summary = 'Estatísticas gerais do catálogo'
-      #swagger.description = 'Retorna o total de Pokémons e a contagem por tipo. Pokémons de tipo duplo contam em ambos os tipos.'
-      #swagger.responses[200] = {
-        description: 'Estatísticas acumuladas',
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/PokemonStats' } } }
-      }
+      #swagger.summary = 'Busca por nome (parcial)'
+      #swagger.description = 'Busca parcial, sem diferenciar maiúsculas de minúsculas (ex: "pika" encontra "pikachu").'
+      #swagger.parameters['name'] = { in: 'query', required: true, type: 'string', description: 'Trecho do nome', example: 'pika' }
+      #swagger.responses[200] = { description: 'Pokémons encontrados', content: { 'application/json': { schema: { $ref: '#/components/schemas/PokemonListSimpleResponse' } } } }
+      #swagger.responses[400] = { description: 'Parâmetro inválido', content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } } }
     */
-    return pokemonController.stats(req, res, next);
-});
-pokemonRoutes.post('/import', (0, validate_request_1.validateRequest)({ body: pokemon_schemas_1.importPokemonSchema }), (req, res, next) => {
-    /*
-    #swagger.auto = false
-    #swagger.tags = ['Pokemons']
-    #swagger.summary = 'Importa um Pokémon da PokéAPI'
-    #swagger.description = 'Busca o Pokémon na PokéAPI (por nome ou número da Pokédex) e o cadastra com tipos, status base e sprite. O id salvo é o número da Pokédex.'
-    #swagger.requestBody = {
-      required: true,
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportPokemon' } } }
-    }
-    #swagger.responses[201] = {
-      description: 'Pokémon importado com sucesso',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/PokemonCreatedResponse' } } }
-    }
-    #swagger.responses[400] = {
-      description: 'Dados de entrada inválidos',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } }
-    }
-    #swagger.responses[404] = {
-      description: 'Pokémon não existe na PokéAPI',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
-    }
-    #swagger.responses[409] = {
-      description: 'Já existe um Pokémon cadastrado com esse id',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
-    }
-    #swagger.responses[503] = {
-      description: 'PokéAPI indisponível (timeout, falha de rede ou circuit breaker aberto)',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
-    }
-  */
-    return pokemonController.import(req, res, next);
-});
-pokemonRoutes.post('/', (0, validate_request_1.validateRequest)({ body: pokemon_schemas_1.createPokemonSchema }), (req, res, next) => {
-    /*
-    #swagger.auto = false
-    #swagger.tags = ['Pokemons']
-    #swagger.summary = 'Cadastra um novo Pokémon'
-    #swagger.description = 'Cadastro manual. O id é o número da Pokédex e deve ser único.'
-    #swagger.requestBody = {
-      required: true,
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/CreatePokemon' } } }
-    }
-    #swagger.responses[201] = {
-      description: 'Pokémon criado com sucesso',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/PokemonCreatedResponse' } } }
-    }
-    #swagger.responses[400] = {
-      description: 'Dados de entrada inválidos',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } }
-    }
-    #swagger.responses[409] = {
-      description: 'Já existe um Pokémon cadastrado com esse id',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
-    }
-  */
-    return pokemonController.create(req, res, next);
-});
-pokemonRoutes.get('/', (0, validate_request_1.validateRequest)({ query: pokemon_schemas_1.listPokemonsQuerySchema }), (req, res, next) => {
-    /*
-    #swagger.auto = false
-    #swagger.tags = ['Pokemons']
-    #swagger.summary = 'Lista os Pokémons'
-    #swagger.description = 'Lista todos os Pokémons ordenados pelo número da Pokédex. Aceita filtro opcional por tipo.'
-    #swagger.parameters['type'] = {
-      in: 'query',
-      description: 'Filtra por tipo (ex: grass, fire, water)',
-      required: false,
-      type: 'string'
-    }
-    #swagger.responses[200] = {
-      description: 'Lista de Pokémons',
-      content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Pokemon' } } } }
-    }
-    #swagger.responses[400] = {
-      description: 'Filtro inválido',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } }
-    }
-  */
-    return pokemonController.list(req, res, next);
-});
-pokemonRoutes.get('/:id', (0, validate_request_1.validateRequest)({ params: pokemon_schemas_1.pokemonIdParamsSchema }), (req, res, next) => {
-    /*
-    #swagger.auto = false
-    #swagger.tags = ['Pokemons']
-    #swagger.summary = 'Busca um Pokémon pelo número da Pokédex'
-    #swagger.parameters['id'] = { in: 'path', required: true, type: 'integer', description: 'Número da Pokédex (ex: 25)' }
-    #swagger.responses[200] = {
-      description: 'Pokémon encontrado',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/Pokemon' } } }
-    }
-    #swagger.responses[400] = {
-      description: 'Id inválido',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } }
-    }
-    #swagger.responses[404] = {
-      description: 'Pokémon não encontrado',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
-    }
-  */
-    return pokemonController.getById(req, res, next);
-});
-pokemonRoutes.put('/:id', (0, validate_request_1.validateRequest)({
-    params: pokemon_schemas_1.pokemonIdParamsSchema,
-    body: pokemon_schemas_1.replacePokemonSchema,
-}), (req, res, next) => {
+    return controller.search(req, res);
+}));
+pokemonRoutes.post('/', (0, validate_request_1.validateRequest)({ body: pokemon_schemas_1.createPokemonSchema }), (0, async_handler_1.asyncHandler)(async (req, res) => {
     /*
       #swagger.auto = false
-    #swagger.tags = ['Pokemons']
-      #swagger.summary = 'Substitui um Pokémon (atualização completa)'
-      #swagger.description = 'PUT substitui o recurso inteiro: todos os campos (exceto o id) são obrigatórios. Para alterar só alguns campos, use PATCH.'
-      #swagger.parameters['id'] = { in: 'path', required: true, type: 'integer', description: 'Número da Pokédex do Pokémon a ser substituído' }
-      #swagger.requestBody = {
-        required: true,
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/ReplacePokemon' } } }
-      }
-      #swagger.responses[200] = {
-        description: 'Pokémon atualizado com sucesso',
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/Pokemon' } } }
-      }
-      #swagger.responses[400] = {
-        description: 'Dados de entrada inválidos',
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } }
-      }
-      #swagger.responses[404] = {
-        description: 'Pokémon não encontrado',
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
-      }
+      #swagger.tags = ['Pokemons']
+      #swagger.summary = 'Cadastra um Pokémon'
+      #swagger.description = 'Informe só o nome da espécie e o nível. Tipos, status base, sprite, experiência, altura e peso são buscados na PokéAPI. Se trainerId for informado, vale a regra dos 6 Pokémons por time.'
+      #swagger.requestBody = { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CreatePokemon' } } } }
+      #swagger.responses[201] = { description: 'Criado', content: { 'application/json': { schema: { $ref: '#/components/schemas/PokemonCreatedResponse' } } } }
+      #swagger.responses[400] = { description: 'Dados inválidos', content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } } }
+      #swagger.responses[404] = { description: 'Espécie não existe na PokéAPI', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+      #swagger.responses[409] = { description: 'Time do treinador já tem 6 Pokémons', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+      #swagger.responses[503] = { description: 'PokéAPI indisponível', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
     */
-    return pokemonController.replace(req, res, next);
-});
-pokemonRoutes.patch('/:id', (0, validate_request_1.validateRequest)({ params: pokemon_schemas_1.pokemonIdParamsSchema, body: pokemon_schemas_1.patchPokemonSchema }), (req, res, next) => {
+    return controller.create(req, res);
+}));
+pokemonRoutes.get('/', (0, validate_request_1.validateRequest)({ query: pokemon_schemas_1.listPokemonsQuerySchema }), (0, async_handler_1.asyncHandler)(async (req, res) => {
     /*
       #swagger.auto = false
-    #swagger.tags = ['Pokemons']
-      #swagger.summary = 'Atualiza parcialmente um Pokémon'
-      #swagger.description = 'PATCH altera apenas os campos enviados (ao menos um).'
-      #swagger.parameters['id'] = { in: 'path', required: true, type: 'integer', description: 'Número da Pokédex do Pokémon a ser atualizado' }
-      #swagger.requestBody = {
-        required: true,
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/PatchPokemon' } } }
-      }
-      #swagger.responses[200] = {
-        description: 'Pokémon atualizado com sucesso',
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/Pokemon' } } }
-      }
-      #swagger.responses[400] = {
-        description: 'Dados de entrada inválidos',
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } }
-      }
-      #swagger.responses[404] = {
-        description: 'Pokémon não encontrado',
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
-      }
+      #swagger.tags = ['Pokemons']
+      #swagger.summary = 'Lista Pokémons (filtros + paginação)'
+      #swagger.parameters['type'] = { in: 'query', type: 'string', description: 'Filtra por tipo (ex: fire)' }
+      #swagger.parameters['minLevel'] = { in: 'query', type: 'integer', description: 'Nível mínimo (padrão 1)' }
+      #swagger.parameters['maxLevel'] = { in: 'query', type: 'integer', description: 'Nível máximo (padrão 100)' }
+      #swagger.parameters['trainerId'] = { in: 'query', type: 'string', description: 'UUID do treinador' }
+      #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Página (padrão 1)' }
+      #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Itens por página (padrão 10, máximo 50)' }
+      #swagger.responses[200] = { description: 'Página de Pokémons', content: { 'application/json': { schema: { $ref: '#/components/schemas/PokemonListResponse' } } } }
+      #swagger.responses[400] = { description: 'Filtro inválido (ex: limit=mil, type=DIGIMON)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } } }
     */
-    return pokemonController.patch(req, res, next);
-});
-pokemonRoutes.delete('/:id', (0, validate_request_1.validateRequest)({ params: pokemon_schemas_1.pokemonIdParamsSchema }), (req, res, next) => {
+    return controller.list(req, res);
+}));
+pokemonRoutes.get('/:id', (0, validate_request_1.validateRequest)({ params: pokemon_schemas_1.idParamSchema }), (0, async_handler_1.asyncHandler)(async (req, res) => {
     /*
-    #swagger.auto = false
-    #swagger.tags = ['Pokemons']
-    #swagger.summary = 'Remove um Pokémon'
-    #swagger.parameters['id'] = { in: 'path', required: true, type: 'integer', description: 'Número da Pokédex do Pokémon a ser removido' }
-    #swagger.responses[204] = { description: 'Pokémon removido com sucesso' }
-    #swagger.responses[400] = {
-      description: 'Id inválido',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } }
-    }
-    #swagger.responses[404] = {
-      description: 'Pokémon não encontrado',
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
-    }
-  */
-    return pokemonController.delete(req, res, next);
-});
+      #swagger.auto = false
+      #swagger.tags = ['Pokemons']
+      #swagger.summary = 'Busca um Pokémon pelo id'
+      #swagger.parameters['id'] = { in: 'path', required: true, type: 'string', description: 'UUID do Pokémon' }
+      #swagger.responses[200] = { description: 'Pokémon', content: { 'application/json': { schema: { $ref: '#/components/schemas/PokemonResponse' } } } }
+      #swagger.responses[400] = { description: 'Id malformado', content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } } }
+      #swagger.responses[404] = { description: 'Não encontrado', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    */
+    return controller.show(req, res);
+}));
+pokemonRoutes.put('/:id', (0, validate_request_1.validateRequest)({ params: pokemon_schemas_1.idParamSchema, body: pokemon_schemas_1.replacePokemonSchema }), (0, async_handler_1.asyncHandler)(async (req, res) => {
+    /*
+      #swagger.auto = false
+      #swagger.tags = ['Pokemons']
+      #swagger.summary = 'Substitui nível e treinador (PUT)'
+      #swagger.description = 'Substitui os campos editáveis. trainerId ausente ou null deixa o Pokémon selvagem. Trocar de treinador respeita a regra dos 6.'
+      #swagger.parameters['id'] = { in: 'path', required: true, type: 'string', description: 'UUID do Pokémon' }
+      #swagger.requestBody = { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ReplacePokemon' } } } }
+      #swagger.responses[200] = { description: 'Atualizado', content: { 'application/json': { schema: { $ref: '#/components/schemas/PokemonCreatedResponse' } } } }
+      #swagger.responses[400] = { description: 'Dados inválidos', content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } } }
+      #swagger.responses[404] = { description: 'Não encontrado', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+      #swagger.responses[409] = { description: 'Time do novo treinador está cheio', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    */
+    return controller.replace(req, res);
+}));
+pokemonRoutes.patch('/:id/level', (0, validate_request_1.validateRequest)({ params: pokemon_schemas_1.idParamSchema, body: pokemon_schemas_1.updatePokemonLevelSchema }), (0, async_handler_1.asyncHandler)(async (req, res) => {
+    /*
+      #swagger.auto = false
+      #swagger.tags = ['Pokemons']
+      #swagger.summary = 'Atualiza só o nível'
+      #swagger.parameters['id'] = { in: 'path', required: true, type: 'string', description: 'UUID do Pokémon' }
+      #swagger.requestBody = { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PatchLevel' } } } }
+      #swagger.responses[200] = { description: 'Nível atualizado', content: { 'application/json': { schema: { $ref: '#/components/schemas/PokemonCreatedResponse' } } } }
+      #swagger.responses[400] = { description: 'Nível inválido (1 a 100)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } } }
+      #swagger.responses[404] = { description: 'Não encontrado', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    */
+    return controller.patchLevel(req, res);
+}));
+pokemonRoutes.delete('/:id', (0, validate_request_1.validateRequest)({ params: pokemon_schemas_1.idParamSchema }), (0, async_handler_1.asyncHandler)(async (req, res) => {
+    /*
+      #swagger.auto = false
+      #swagger.tags = ['Pokemons']
+      #swagger.summary = 'Remove um Pokémon'
+      #swagger.parameters['id'] = { in: 'path', required: true, type: 'string', description: 'UUID do Pokémon' }
+      #swagger.responses[204] = { description: 'Removido (sem corpo)' }
+      #swagger.responses[404] = { description: 'Não encontrado', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    */
+    return controller.remove(req, res);
+}));
