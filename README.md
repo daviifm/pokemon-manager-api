@@ -274,12 +274,38 @@ DB_DRIVER=memory USE_EXTERNAL_API=false npm run dev
 - **Ordem de rotas no Express**: `/pokemons/stats` e `/pokemons/search` são registradas antes de `/pokemons/:id`, pois o Express usa a primeira rota que casar com a URL.
 - **Composition Root**: as factories em `main/factories/` são o único lugar que escolhe as implementações concretas (Prisma, `pg` ou memória; PokéAPI real ou simulada).
 
+## Entrega 2 (Temp)
+
+### Requisitos ainda não implementados
+
+- **Autenticação e controle de acesso** (usuários com perfil `USER`/`ADMIN`, rota `PATCH /users/:id/role`, middlewares `ensureAuthenticated`/`ensureRole` e a regra de que um treinador comum só pode soltar os próprios Pokémons). Ficou para a Entrega 3, que é dedicada a JWT, segurança e RBAC.
+
+### Implementado de forma diferente
+
+| Proposta | Como ficou | Motivo |
+| -------- | ---------- | ------ |
+| Exemplos com a entidade `users` | Entidade e tabela `trainers` | Adaptação ao domínio do projeto (Treinador é quem tem o time de Pokémons) |
+| `type` como enum com 6 tipos em maiúsculas (`FIRE`, `WATER`...) | `types` (lista) com os 18 tipos oficiais; aceita qualquer caixa (`FIRE`, `fire`) | Representar tipos duplos e todos os tipos reais. No cadastro, `type` é opcional e, se enviado, precisa ser um tipo real da espécie |
+| Trocar o repositório na factory pelo `PgPokemonRepository` | Prisma, `pg` e memória coexistem, escolhidos por `DB_DRIVER` | Cumprir as tasks de SQL puro e de Prisma sem descartar nenhuma |
+| `GET` com ID inexistente → 404 | ID que não é UUID → `400`; UUID válido que não existe → `404` | Formato inválido é erro de entrada (400); recurso ausente é 404 |
+| Interface do banco: Adminer na porta 8080 | pgAdmin na porta 8080 | O restante das tasks usa o pgAdmin (Query Tool) |
+
+### Funcionalidades adicionais
+
+- **Dados completos da PokéAPI**: além de sprite, experiência, altura e peso, o cadastro traz **tipos e status base com BST** (nicho competitivo/Nuzlocke).
+- **Resiliência além do timeout**: retry com espera crescente, **circuit breaker** e validação da resposta da PokéAPI com Zod (Camada Anti-Corrupção).
+- **Três repositórios intercambiáveis** (Prisma, `pg`, memória) cumprindo o mesmo contrato.
+- **CRUD completo de Treinadores**; ao remover um treinador, seus Pokémons ficam sem treinador, dentro de uma **transação**.
+- **Regra dos 6 também na troca de treinador** (`PUT /pokemons/:id`), não só no cadastro.
+- **Filtro por treinador na listagem** (`?trainerId=`) e a rota `GET /pokemons/:id`.
+- **Docker com serviço de migrations**: o `docker compose up` cria as tabelas sozinho antes de subir a API.
+
 ## Correções da Entrega 1 (concluídas)
 
-1. ✅ **Status base (base stats)** adicionados ao catálogo, com o BST calculado, vindos direto da PokéAPI.
-2. ✅ **`type` virou `types` (lista)**: Pokémons de tipo duplo agora são representados corretamente.
-3. ✅ **IDs repetidos**: o ID passou a ser gerado pelo servidor (UUID), e não mais enviado pelo cliente.
-4. ✅ **Rotas fora do `server.ts`**: movidas para `infrastructure/http/routes/`.
+1. **Status base (base stats)** adicionados ao catálogo, com o BST calculado, vindos direto da PokéAPI.
+2. **`type` virou `types` (lista)**: Pokémons de tipo duplo agora são representados corretamente.
+3. **IDs repetidos**: o ID passou a ser gerado pelo servidor (UUID), e não mais enviado pelo cliente.
+4. **Rotas fora do `server.ts`**: movidas para `infrastructure/http/routes/`.
 
 ## Roadmap: Autenticação e Segurança (Entrega 3)
 
