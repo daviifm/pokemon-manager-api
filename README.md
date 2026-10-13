@@ -278,7 +278,8 @@ DB_DRIVER=memory USE_EXTERNAL_API=false npm run dev
 
 ### Requisitos ainda não implementados
 
-- **Autenticação e controle de acesso** (usuários com perfil `USER`/`ADMIN`, rota `PATCH /users/:id/role`, middlewares `ensureAuthenticated`/`ensureRole` e a regra de que um treinador comum só pode soltar os próprios Pokémons). Ficou para a Entrega 3, que é dedicada a JWT, segurança e RBAC.
+- Faltou criar um `GET /pokedex/search`. O único jeito de consultar a PokeAPI atualmente é cadastrando o Pokemon com `POST /pokemons`
+- Entregas 3 e 4
 
 ### Implementado de forma diferente
 
